@@ -7,6 +7,8 @@
 #include "Interfaces/OnlineSessionInterface.h"
 #include "SessionHandlerSubsystem.generated.h"
 
+
+class FOnlineSessionSettings;
 /**
  * 
  */
@@ -37,7 +39,7 @@ protected:
 
 private:
 	IOnlineSessionPtr SessionInterface;
-
+	TSharedPtr<FOnlineSessionSettings> LastSessionSettings;
 	//
 	// To add to the Online Session Interface delegate list.
 	// We'll bind our USessionHandlerSubsystem internal callbacks to these.

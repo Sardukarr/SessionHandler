@@ -3,7 +3,7 @@
 
 #include "SessionHandlerSubsystem.h"
 #include "OnlineSubsystem.h"
-
+#include "OnlineSessionSettings.h"
 
 USessionHandlerSubsystem::USessionHandlerSubsystem():
 	CreateSessionCompleteDelegate(FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionComplete)),
@@ -22,6 +22,35 @@ USessionHandlerSubsystem::USessionHandlerSubsystem():
 
 void USessionHandlerSubsystem::CreateSession(int32 NumPublicConnections, FString MatchType)
 {
+	if (!SessionInterface.IsValid()) return;
+
+	//check if session exist and destroy if so, becose we need to have no session to create one
+	auto ExistingSession = SessionInterface->GetNamedSession(NAME_GameSession);
+	if (ExistingSession != nullptr)
+	{
+		SessionInterface->DestroySession(NAME_GameSession);
+	}
+	//delegate to activate after completion of communication with server, stored in a delegateHandle
+	CreateSessionCompleteDelegateHandle = SessionInterface->AddOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteDelegate);
+
+	LastSessionSettings = MakeShareable(new FOnlineSessionSettings());
+	// If subsystem is null it is a lan, if eq STEAM it is not lan;
+	LastSessionSettings->bIsLANMatch = IOnlineSubsystem::Get()->GetSubsystemName() == "NULL" ? true:false;
+	LastSessionSettings->NumPublicConnections = NumPublicConnections;
+	LastSessionSettings->bAllowJoinInProgress = true;
+	LastSessionSettings->bAllowJoinViaPresence = true;
+	LastSessionSettings->bShouldAdvertise = true;
+	LastSessionSettings->bUsesPresence = true;
+	LastSessionSettings->bUseLobbiesIfAvailable = true;
+	LastSessionSettings->Set(FName("MatchType"), MatchType, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
+
+	const ULocalPlayer* LocalPlayer = GetWorld()->GetFirstLocalPlayerFromController();
+
+	// if session is not created successfull, destroy handle
+	if (!SessionInterface->CreateSession(*LocalPlayer->GetPreferredUniqueNetId(), NAME_GameSession, *LastSessionSettings))
+	{
+		SessionInterface->ClearOnCancelFindSessionsCompleteDelegate_Handle(CreateSessionCompleteDelegateHandle);
+	}
 }
 
 void USessionHandlerSubsystem::FindSessions(int32 MaxSearchResults)
