@@ -30,6 +30,10 @@ void USessionHandlerMenu::MenuSetup(int32 NumberOfPublicConnecions, FString Type
 	{
 		SessionHandlerSubsystem = GameInstance->GetSubsystem<USessionHandlerSubsystem>();
 	}
+	if (SessionHandlerSubsystem)
+	{
+		SessionHandlerSubsystem->MultiplayerOnCreateSessionComplete.AddDynamic(this, &ThisClass::OnCreateSession);
+	}
 }
 
 bool USessionHandlerMenu::Initialize()
@@ -58,6 +62,18 @@ void USessionHandlerMenu::NativeDestruct()
 
 		Super::NativeDestruct();
 	}
+}
+
+void USessionHandlerMenu::OnCreateSession(bool bWasSuccessful)
+{
+	if (bWasSuccessful)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Yellow, FString(TEXT("SessionCreateSuccessfull")));
+		}
+	}
+
 }
 
 void USessionHandlerMenu::HostButtonClicked()
